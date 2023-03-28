@@ -1,0 +1,19 @@
+Package: verifyr
+Type: Package
+Title: Verify clinical trial output versions
+Version: 0.0.1
+Authors@R: 
+    person(given = "Tiina",
+           family = "Kirsilä",
+           role = c("aut", "cre"),
+           email = "tiina.kirsilae@novartis.com")
+Description: A package to hold functions for comparing different version of rtf files.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.2
+Imports: 
+    magrittr
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
