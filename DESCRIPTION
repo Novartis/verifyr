@@ -6,7 +6,7 @@ Authors@R:
     person(given = "Tiina",
            family = "Kirsilä",
            role = c("aut", "cre"),
-           email = "tiina.kirsilae@novartis.com")
+           email = "tiina.kirsila@gmail.com")
 Description: A package to hold functions for comparing different version of rtf files.
 License: MIT + file LICENSE
 Encoding: UTF-8
