@@ -16,7 +16,7 @@ ui <- shiny::fluidPage(
     h4("Initial comparison (using function initial_comparison):"),
     DT::dataTableOutput("initial_out"),
     h4("Side-by side comparison (using function full_comparison):"),
-    shiny::htmlOutput("tiina_out")
+    shiny::htmlOutput("full_out")
 
   )
 )
@@ -43,13 +43,6 @@ full_verify <- shiny::reactive({
   }
 })
 
-#output$list_out <- DT::renderDataTable({
-#  if (!is.null(list_of_files())) {
-#    DT::datatable(list_of_files(), selection = "single")
-#  } else {
-#    "No folder selected or folders do not exist"
-#  }
-#})
 
 output$initial_out <-  DT::renderDataTable({
   if (!is.null(initial_verify())) {
@@ -64,7 +57,7 @@ output$initial_out <-  DT::renderDataTable({
 shiny::observe({
   shiny::req(input$initial_out_rows_selected)
   selRow <- initial_verify()[input$initial_out_rows_selected,]
-  output$tiina_out <- shiny::renderUI({
+  output$full_out <- shiny::renderUI({
 
     #list side-by-side comparison
     shiny::HTML(
