@@ -7,8 +7,8 @@
 ui <- shiny::fluidPage(
   shiny::headerPanel("File Location Input"),
   shiny::sidebarPanel(
-    shiny::textInput("old_file_location", "Old File Folder", "./test_outputs/base_files"),
-    shiny::textInput("new_file_location", "New File Folder", "./test_outputs/compare_files"),
+    shiny::textInput("old_file_location", "Old File Folder", system.file("/test_outputs/base_files", package = "verifyr")),
+    shiny::textInput("new_file_location", "New File Folder", system.file("/test_outputs/compare_files", package = "verifyr")),
     shiny::textInput("file_name_patter", "File Name Pattern"),
     shiny::actionButton("go", "Go")
   ),

@@ -21,7 +21,7 @@ Returns a tibble, \code{selected_files} with 3 columns \code{file}, \code{old_pa
 }
 \examples{
 verifyr::list_files(old = "./test_outputs/base_files",
-                    new = "./test_outputs/compare_file",
+                    new = "./test_outputs/compare_files",
                     pattern = "14-1")
 
 }
