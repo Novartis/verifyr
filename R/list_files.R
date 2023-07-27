@@ -33,23 +33,12 @@ list_files <- function(old, new ,pattern=NULL){
     new_paths  <- list.files(path = {{ new }},    pattern = {{ pattern }}, full.names=TRUE)
     new_info   <- tibble::tibble(file = new_files, new_path = new_paths)
 
-    selected_files <- dplyr::full_join(old_info, new_info, by="file")
+    selected_files <- dplyr::full_join(old_info, new_info, by="file") %>%
+      dplyr::arrange(file)
 
     return(selected_files)
 
   } else print("one or both of the folders do not exist")
 
 }
-
-old_files  <- list.files(path ="~/aswi_tiki/verifyr/test_outputs/base_files",    pattern = "14-1")
-old_paths  <- list.files(path ="~/aswi_tiki/verifyr/test_outputs/base_files",    pattern = "14-1", full.names=TRUE)
-old_info   <- tibble::tibble(file = old_files, old_path = old_paths)
-
-new_files  <- list.files(path ="~/aswi_tiki/verifyr/test_outputs/compare_files",    pattern = "14-1")
-new_paths  <- list.files(path ="~/aswi_tiki/verifyr/test_outputs/compare_files",    pattern = "14-1", full.names=TRUE)
-new_info   <- tibble::tibble(file = new_files, new_path = new_paths)
-
-
-files_present <- dplyr::full_join(old_info, new_info, by="file")
-
 
