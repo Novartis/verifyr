@@ -10,6 +10,7 @@ ui <- shiny::fluidPage(
     shiny::textInput("old_file_location", "Old File Folder", system.file("/test_outputs/base_files", package = "verifyr")),
     shiny::textInput("new_file_location", "New File Folder", system.file("/test_outputs/compare_files", package = "verifyr")),
     shiny::textInput("file_name_patter", "File Name Pattern"),
+    shiny::textInput("omit_row", "Omit rows with"),
     shiny::actionButton("go", "Go")
   ),
   shiny::mainPanel(
@@ -31,9 +32,22 @@ list_of_files <- eventReactive(input$go, {
   })
 
 
+omitted <- shiny::reactive({
+  #delete <- strsplit(input$omit_row, ",\\s*")[[1]]
+  input$omit_row
+})
+
+
 initial_verify <- shiny::reactive({
-  if (!is.null(list_of_files())) {
-    tibble::tibble(list_of_files()) %>% dplyr::rowwise() %>% dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
+  if (!is.null(list_of_files()) && is.null(omitted())) {
+    tibble::tibble(list_of_files()) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
+
+  } else if (!is.null(list_of_files()) && !is.null(omitted())) {
+    tibble::tibble(list_of_files()) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
   }
 })
 

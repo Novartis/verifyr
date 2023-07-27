@@ -5,22 +5,40 @@
 #'
 #' @param old character, giving the full file path and name of the old file (required)
 #' @param new character, giving the full file path and name of the new file (required)
+#' @param omit character, giving the string to identify the rows which should be omitted in the comparison (optional)
 #'
 #' @return Returns a vector \code{diff_print} with basic info about the differences in the content of the files
 #'
 #' @examples
-#' verifyr::initial_comparison(old = "./test_outputs/base_files/14-1.01.rtf",
-#'                             new = "./test_outputs/compare_files/14-1.01.rtf")
+#' verifyr::initial_comparison(old = paste0(fs::path_package("/test_outputs/base_files/",    "14-1.01.rtf", package = "verifyr")),
+#'                             new = paste0(fs::path_package("/test_outputs/compare_files/", "14-1.01.rtf", package = "verifyr")))
 #'
 #' @export
 
-initial_comparison <- function(old, new){
+initial_comparison <- function(old, new, omit = NULL){
 
 
   ## do the comparison only if both of the files exist
   if (file.exists({{ old }}) && file.exists({{ new }})) {
 
-    difference <- all.equal(readLines({{ old }}, warn = FALSE), readLines({{ new }}, warn = FALSE))
+    ## compare full files if omit is NULL
+    if (is.null(omit)){
+      difference <- all.equal(readLines({{ old }}, warn = FALSE), readLines({{ new }}, warn = FALSE))
+
+    ## delete rows that are to be omitted and only then do the comparison
+    } else {
+
+      omit_reg  <- paste0({{ omit }})
+
+      old_file  <- readLines({{ old }}, warn = FALSE)
+      old_file_omitted <- stringr::str_subset(string = old_file, pattern = omit_reg, negate = TRUE)
+
+      new_file  <- readLines({{ new }}, warn = FALSE)
+      new_file_omitted <- stringr::str_subset(string = new_file, pattern = omit_reg, negate = TRUE)
+
+      difference <- all.equal(old_file_omitted, new_file_omitted)
+
+    }
 
     ## all.equal returns length 2 vector if the number of rows are not the same in the compared files
     if (length(difference)==2) {
@@ -58,6 +76,3 @@ initial_comparison <- function(old, new){
   }
   return(diff_print)
 }
-
-
-
