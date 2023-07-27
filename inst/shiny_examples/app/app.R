@@ -30,10 +30,11 @@ list_of_files <- eventReactive(input$go, {
     }
   })
 
-
 initial_verify <- shiny::reactive({
   if (!is.null(list_of_files())) {
-    tibble::tibble(list_of_files()) %>% dplyr::rowwise() %>% dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
+    tibble::tibble(list_of_files()) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
   }
 })
 
