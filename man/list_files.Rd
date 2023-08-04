@@ -20,8 +20,8 @@ Returns a tibble, \code{selected_files} with 3 columns \code{file}, \code{old_pa
 \code{list_files} List files that exist in two folders with a specific name pattern
 }
 \examples{
-verifyr::list_files(old = "./test_outputs/base_files",
-                    new = "./test_outputs/compare_files",
+verifyr::list_files(old = paste0(fs::path_package("/extdata/base_files/", package = "verifyr")),
+                    new = paste0(fs::path_package("/extdata/compare_files/", package = "verifyr")),
                     pattern = "14-1")
 
 }

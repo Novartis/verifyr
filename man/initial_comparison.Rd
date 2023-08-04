@@ -20,7 +20,11 @@ Returns a vector \code{diff_print} with basic info about the differences in the 
 \code{initial_comparison} returns basic info about the differences of two files.
 }
 \examples{
-verifyr::initial_comparison(old = paste0(fs::path_package("/test_outputs/base_files/",    "14-1.01.rtf", package = "verifyr")),
-                            new = paste0(fs::path_package("/test_outputs/compare_files/", "14-1.01.rtf", package = "verifyr")))
+verifyr::initial_comparison(old = paste0(fs::path_package("/extdata/base_files/",
+                                                          "14-1.01.rtf",
+                                                          package = "verifyr")),
+                            new = paste0(fs::path_package("/extdata/compare_files/",
+                                                          "14-1.01.rtf",
+                                                          package = "verifyr")))
 
 }
