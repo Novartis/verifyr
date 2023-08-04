@@ -1,6 +1,6 @@
 test_that("Returns tibble with matching files when both folders and pattern exist", {
-  old_folder <- paste0(fs::path_package("/test_outputs/unit_tests/old/", package = "verifyr"))
-  new_folder <- paste0(fs::path_package("/test_outputs/unit_tests/new/", package = "verifyr"))
+  old_folder <- testthat::test_path("test_outputs/old")
+  new_folder <- testthat::test_path("test_outputs/new")
 
   # Perform the listing
   result <- list_files(old_folder, new_folder, pattern = "test03")
@@ -18,8 +18,8 @@ test_that("Returns tibble with matching files when both folders and pattern exis
 })
 
 test_that("Returns empty tibble when pattern does not match any files", {
-  old_folder <- paste0(fs::path_package("/test_outputs/unit_tests/old/", package = "verifyr"))
-  new_folder <- paste0(fs::path_package("/test_outputs/unit_tests/new/", package = "verifyr"))
+  old_folder <- testthat::test_path("test_outputs/old")
+  new_folder <- testthat::test_path("test_outputs/new")
 
   # Perform the listing with non-matching pattern
   result <- list_files(old_folder, new_folder, pattern = "nomatch")
@@ -30,7 +30,7 @@ test_that("Returns empty tibble when pattern does not match any files", {
 })
 
 test_that("Returns 'one or both of the folders do not exist' if either folder does not exist", {
-  old_folder <- paste0(fs::path_package("/test_outputs/unit_tests/old/", package = "verifyr"))
+  old_folder <- testthat::test_path("test_outputs/old")
   new_folder <- "non_existent_folder"
 
   result <- capture_output(list_files(old_folder, new_folder, pattern = "rtf"))

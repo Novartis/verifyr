@@ -7,9 +7,10 @@
 ui <- shiny::fluidPage(
   shiny::headerPanel("File Location Input"),
   shiny::sidebarPanel(
-    shiny::textInput("old_file_location", "Old File Folder", system.file("/test_outputs/base_files", package = "verifyr")),
-    shiny::textInput("new_file_location", "New File Folder", system.file("/test_outputs/compare_files", package = "verifyr")),
+    shiny::textInput("old_file_location", "Old File Folder", paste0(system.file("/extdata/base_files", package = "verifyr"))),
+    shiny::textInput("new_file_location", "New File Folder", paste0(system.file("/extdata/compare_files", package = "verifyr"))),
     shiny::textInput("file_name_patter", "File Name Pattern"),
+    shiny::textInput("omit_rows", "Omit rows with text", "Source:"),
     shiny::actionButton("go", "Go")
   ),
   shiny::mainPanel(
@@ -33,8 +34,9 @@ list_of_files <- eventReactive(input$go, {
 initial_verify <- shiny::reactive({
   if (!is.null(list_of_files())) {
     tibble::tibble(list_of_files()) %>%
+    dplyr::mutate(omitted = input$omit_rows) %>%
     dplyr::rowwise() %>%
-    dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path))
+    dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path, omit = omitted))
   }
 })
 
