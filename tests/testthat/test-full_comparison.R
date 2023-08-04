@@ -1,7 +1,7 @@
 
 test_that("Returns comparison when both files exist", {
-  old_file <- paste0(fs::path_package("/test_outputs/unit_tests/old/","test020_old.rtf", package = "verifyr"))
-  new_file <- paste0(fs::path_package("/test_outputs/unit_tests/new/","test02b_new.rtf", package = "verifyr"))
+  old_file <-  testthat::test_path("test_outputs/old","test020_old.rtf")
+  new_file <-  testthat::test_path("test_outputs/new/","test02b_new.rtf")
 
   # Perform the comparison
   result <- full_comparison(old_file, new_file)
@@ -12,7 +12,7 @@ test_that("Returns comparison when both files exist", {
 
 test_that("Returns 'one or both of the files do not exist' if 'old' file does not exist", {
   old_file <- "non_existent_old_file.rtf"
-  new_file <-  paste0(fs::path_package("/test_outputs/unit_tests/new/","test02a_new.rtf", package = "verifyr"))
+  new_file <-  testthat::test_path("test_outputs/new/","test02a_new.rtf")
 
   result <- capture_output(full_comparison(old_file, new_file))
 

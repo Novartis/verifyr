@@ -9,8 +9,12 @@
 #' @return Returns \code{diff_print}, html output of the differences
 #'
 #' @examples
-#' verifyr::full_comparison(old = "./test_outputs/base_files/14-1.01.rtf",
-#'                          new = "./test_outputs/compare_files/14-1.01.rtf")
+#' verifyr::full_comparison(old = paste0(fs::path_package("/extdata/base_files/",
+#'                                                           "14-1.01.rtf",
+#'                                                           package = "verifyr")),
+#'                             new = paste0(fs::path_package("/extdata/compare_files/",
+#'                                                           "14-1.01.rtf",
+#'                                                           package = "verifyr")))
 #'
 #' @export
 
