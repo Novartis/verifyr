@@ -15,30 +15,27 @@
 #'
 #' @export
 
-
-list_files <- function(old, new ,pattern=NULL){
-
-
+list_files <- function(old, new, pattern = NULL) {
 
   ## do the comparison only if both of the files exist
   if (file.exists({{ old }}) && file.exists({{ new }})) {
 
     ## get the info of the old files
-    old_files  <- list.files(path = {{ old }},    pattern = {{ pattern }})
-    old_paths  <- list.files(path = {{ old }},    pattern = {{ pattern }}, full.names=TRUE)
+    old_files  <- list.files(path = {{ old }}, pattern = {{ pattern }})
+    old_paths  <- list.files(path = {{ old }}, pattern = {{ pattern }}, full.names = TRUE)
     old_info   <- tibble::tibble(file = old_files, old_path = old_paths)
 
     ## get the info of the new files
-    new_files  <- list.files(path = {{ new }},    pattern = {{ pattern }})
-    new_paths  <- list.files(path = {{ new }},    pattern = {{ pattern }}, full.names=TRUE)
+    new_files  <- list.files(path = {{ new }}, pattern = {{ pattern }})
+    new_paths  <- list.files(path = {{ new }}, pattern = {{ pattern }}, full.names = TRUE)
     new_info   <- tibble::tibble(file = new_files, new_path = new_paths)
 
-    selected_files <- dplyr::full_join(old_info, new_info, by="file") %>%
+    selected_files <- dplyr::full_join(old_info, new_info, by = "file") %>%
       dplyr::arrange(file)
 
     return(selected_files)
 
-  } else print("one or both of the folders do not exist")
-
+  } else {
+    print("one or both of the folders do not exist")
+  }
 }
-

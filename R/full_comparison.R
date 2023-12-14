@@ -12,28 +12,27 @@
 #' verifyr::full_comparison(old = paste0(fs::path_package("/extdata/base_files/",
 #'                                                           "14-1.01.rtf",
 #'                                                           package = "verifyr")),
-#'                             new = paste0(fs::path_package("/extdata/compare_files/",
+#'                          new = paste0(fs::path_package("/extdata/compare_files/",
 #'                                                           "14-1.01.rtf",
 #'                                                           package = "verifyr")))
 #'
 #' @export
 
-
-full_comparison <- function(old, new){
-
+full_comparison <- function(old, new) {
 
   ## do the comparison only if both of the files exist
   if (file.exists({{ old }}) && file.exists({{ new }})) {
 
     ## read in the rtf files
-    rtf_old    <-  striprtf::read_rtf(file = file.path({{ old }}))
-    rtf_new    <-  striprtf::read_rtf(file = file.path({{ new }}))
+    rtf_old <- striprtf::read_rtf(file = file.path({{ old }}))
+    rtf_new <- striprtf::read_rtf(file = file.path({{ new }}))
 
+    diff_style <- list(html.output = "diff.w.style")
+    diff_print <- diffobj::diffPrint(rtf_old, rtf_new, color.mode = "rgb", format = "html", style = diff_style)
 
-  diff_print <- diffobj::diffPrint(rtf_old, rtf_new, color.mode="rgb", format="html", style=list(html.output="diff.w.style"))
+    return(diff_print)
 
-  return(diff_print)
-
-  } else print("one or both of the files do not exist")
-
+  } else {
+    print("one or both of the files do not exist")
+  }
 }

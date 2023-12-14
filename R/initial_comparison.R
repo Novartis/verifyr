@@ -19,17 +19,16 @@
 #'
 #' @export
 
-initial_comparison <- function(old, new, omit = NULL){
-
+initial_comparison <- function(old, new, omit = NULL) {
 
   ## do the comparison only if both of the files exist
   if (file.exists({{ old }}) && file.exists({{ new }})) {
 
     ## compare full files if omit is NULL
-    if (is.null(omit)){
+    if (is.null(omit) || "" == paste0({{ omit }})) {
       difference <- all.equal(readLines({{ old }}, warn = FALSE), readLines({{ new }}, warn = FALSE))
 
-    ## delete rows that are to be omitted and only then do the comparison
+      ## delete rows that are to be omitted and only then do the comparison
     } else {
 
       omit_reg  <- paste0({{ omit }})
@@ -41,31 +40,24 @@ initial_comparison <- function(old, new, omit = NULL){
       new_file_omitted <- stringr::str_subset(string = new_file, pattern = omit_reg, negate = TRUE)
 
       difference <- all.equal(old_file_omitted, new_file_omitted)
-
     }
 
-    ## all.equal returns length 2 vector if the number of rows are not the same in the compared files
-    if (length(difference)==2) {
+    ## all.equal returns logical vector if there are no differences
+    if (typeof(difference) == "logical") {
+      diff_print <- paste0("No changes")
+
+      ## all.equal returns length 2 vector if the number of rows are not the same in the compared files
+    } else if (length(difference) == 2) {
       diff_print <- paste0("Output size has changes")
 
       ## all.equal returns length 1 vector if the number of rows are the same but there are differences in the content
-    } else if (length(difference)==1) {
+    } else if (length(difference) == 1) {
 
-      ## all.equal returns logical vector if there are no differences
-      if (typeof(difference)=="logical"){
-        diff_print <- paste0("No changes")
+      lines_diff <- as.numeric(gsub("[^[:digit:].]", "", difference))
 
-      } else if (typeof(difference)!="logical") {
+      if (lines_diff == 1) diff_print <- paste0("Only one row has changed")
+      if (lines_diff >  1) diff_print <- paste0("Output has changes in ", lines_diff, " places")
 
-        lines_diff <- as.numeric(gsub("[^[:digit:].]", "",  difference))
-
-
-        if(lines_diff == 1) diff_print <- paste0("Only one row has changed")
-        if(lines_diff >  1) diff_print <- paste0("Output has changes in ", lines_diff, " places")
-
-      } else {
-        print("debug1: something went wrong")
-      }
     } else {
       print("debug2: something went wrong")
     }
@@ -74,9 +66,9 @@ initial_comparison <- function(old, new, omit = NULL){
   } else if (!file.exists({{ old }}) && !file.exists({{ new }})) {
     stop("Neither of the files exist")
 
-  } else if (!file.exists({{ old }}) || !file.exists({{ new }})) {
+  } else {
     diff_print <- "Unable to compare"
-
   }
+
   return(diff_print)
 }
