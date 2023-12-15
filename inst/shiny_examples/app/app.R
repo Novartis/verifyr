@@ -23,7 +23,7 @@ ui <- shiny::fluidPage(
 
 server <- function(input, output) {
 
-  list_of_files <- eventReactive(input$go, {
+  list_of_files <- shiny::eventReactive(input$go, {
     if (file.exists(input$old_file) && file.exists(input$new_file)) {
       verifyr::list_files(input$old_file, input$new_file, input$file_name_pattern)
     }
