@@ -35,5 +35,9 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
+# Temporary files created by VIM
+*.swo
+*.swp
+
 # R Environment Variables
 .Renviron

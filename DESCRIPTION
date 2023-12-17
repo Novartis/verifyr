@@ -13,6 +13,7 @@ Imports:
     fs,
     magrittr,
     shiny,
+    shinyFiles,
     stringr,
     striprtf,
     tibble
