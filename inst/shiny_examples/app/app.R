@@ -5,14 +5,15 @@
 #'
 
 custom_file_input <- function (input_id, label, value = "", ...) {
-  div(class = "form-group shiny-input-container", style = "padding-right: 50px; position: relative; width: 100%;",
-    shinyFiles::shinyDirButton(paste0(input_id, "_directory"), NULL, "Please select a folder", style = "position: absolute; right: 0px; top: 25px;", icon = icon("folder-open")),
+  div(class = "form-group form-group-custom shiny-input-container",
+    shinyFiles::shinyDirButton(paste0(input_id, "_directory"), NULL, "Please select a folder", icon = icon("folder-open")),
     tags$label(label, `for` = input_id, class = "control-label"),
     tags$input(id = input_id, type = "text", class = "shiny-input-text form-control shiny-bound-input", value = value, ...),
   )
 }
 
 ui <- shiny::fluidPage(
+  shiny::includeCSS("styles.css"),
   shiny::headerPanel("File Location Input"),
   shiny::wellPanel(
     shiny::fluidRow(
@@ -31,15 +32,15 @@ ui <- shiny::fluidPage(
     shiny::column(12,
       h2("Initial comparison (using function initial_comparison):"),
       DT::dataTableOutput("initial_out"),
+      shiny::textOutput("initial_out_placeholder"),
     ),
     shiny::column(12,
       h2("Side-by side comparison (using function full_comparison):"),
-      shiny::htmlOutput("full_out")
+      shiny::htmlOutput("full_out"),
+      shiny::textOutput("full_out_placeholder"),
     ),
   ),
-  style = "padding: 20px;",
 )
-
 server <- function(input, output, session) {
 
   roots <- c(Home = fs::path_home(), Examples = fs::path_package("verifyr", "extdata"))
@@ -47,7 +48,10 @@ server <- function(input, output, session) {
   shinyFiles::shinyDirChoose(input, "old_file_location_directory", roots = roots, session = session, restrictions = system.file(package = "base"), allowDirCreate = FALSE)
   shinyFiles::shinyDirChoose(input, "new_file_location_directory", roots = roots, session = session, restrictions = system.file(package = "base"), allowDirCreate = FALSE)
 
-  observe({
+  initial_out_placeholder_text <- reactiveVal('Select the compared file folders and execute the initial comparison by clicking on the "Go" button.')
+  full_out_placeholder_text    <- reactiveVal('Click on a row in the initial comparison result to view the detailed side-by-side comparison.')
+
+  shiny::observe({
     if (!is.integer(input$old_file_location_directory)) {
       shiny::updateTextInput(session, "old_file_location",
         label <- NULL,
@@ -58,13 +62,14 @@ server <- function(input, output, session) {
     if (!is.integer(input$new_file_location_directory)) {
       shiny::updateTextInput(session, "new_file_location",
         label <- NULL,
-        value <- parseDirPath(roots, input$new_file_location_directory)
+        value <- shinyFiles::parseDirPath(roots, input$new_file_location_directory)
       )
     }
   })
 
   list_of_files <- shiny::eventReactive(input$go, {
     if (file.exists(input$old_file_location) && file.exists(input$new_file_location)) {
+      initial_out_placeholder_text('') 
       verifyr::list_files(input$old_file_location, input$new_file_location, input$file_name_patter)
     }
   })
@@ -95,10 +100,10 @@ server <- function(input, output, session) {
   shiny::observe({
     shiny::req(input$initial_out_rows_selected)
     selRow <- initial_verify()[input$initial_out_rows_selected,]
-
-    output$full_out <- shiny::renderUI({
+    full_out_placeholder_text('') 
 
     #list side-by-side comparison
+    output$full_out <- shiny::renderUI({
       shiny::HTML(
         as.character(
           verifyr::full_comparison(paste0(selRow[2]), paste0(selRow[3]))
@@ -106,6 +111,10 @@ server <- function(input, output, session) {
       )
     })
   })
+
+  # set up the reactive value bindings to default outputs
+  output$initial_out_placeholder <- renderText({ initial_out_placeholder_text() })
+  output$full_out_placeholder <- renderText({ full_out_placeholder_text() })
 }
 
 shiny::shinyApp(ui, server)

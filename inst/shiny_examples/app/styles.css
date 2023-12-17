@@ -1,0 +1,20 @@
+.container-fluid {
+    padding: 20px !important;
+}
+
+.form-group-custom {
+    padding-right: 50px; 
+    position: relative; 
+    width: 100%;
+}
+
+.form-group-custom .shinyDirectories {
+    position: absolute; 
+    right: 0px; 
+    top: 25px;
+}
+
+#initial_out td:hover {
+    cursor: pointer;
+}
+
