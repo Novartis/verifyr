@@ -24,7 +24,7 @@ ui <- shiny::fluidPage(
       shiny::column(6,
         custom_file_input("old_folder", "Old File Folder", "/extdata/base_files"),
         custom_file_input("new_folder", "New File Folder", "/extdata/compare_files"),
-        shiny::actionButton("go", "Go")
+        shiny::actionButton("go", "Go"),
       ),
       shiny::column(6,
         shiny::textInput("file_name_patter", "File Name Pattern"),
@@ -40,6 +40,16 @@ ui <- shiny::fluidPage(
     ),
     shiny::column(12,
       h2("Side-by side comparison (using function full_comparison):"),
+      shiny::fluidRow(
+        shiny::column(6,
+          shiny::textOutput("full_out_placeholder1"),
+          shiny::downloadLink("open_old_file_link", shiny::textOutput("open_old_file_link_text")),
+        ),
+        shiny::column(6,
+          shiny::textOutput("full_out_placeholder2"),
+          shiny::downloadLink("open_new_file_link", shiny::textOutput("open_new_file_link_text")),
+        ),
+      ),
       shiny::htmlOutput("full_out"),
       shiny::textOutput("full_out_placeholder"),
     ),
@@ -52,6 +62,9 @@ server <- function(input, output, session) {
 
   do.call(shinyFiles::shinyDirChoose, c(list(input, "old_folder_select"), params))
   do.call(shinyFiles::shinyDirChoose, c(list(input, "new_folder_select"), params))
+
+  open_old_file_link <- shiny::reactiveVal("")
+  open_new_file_link <- shiny::reactiveVal("")
 
   default1 <- "Select the compared file folders and execute the initial comparison by clicking on the 'Go' button."
   initial_out_placeholder_text <- shiny::reactiveVal(default1)
@@ -112,6 +125,34 @@ server <- function(input, output, session) {
         )
       )
     })
+
+    if (!is.na(sel_row[2])) {
+      open_old_file_link(paste0("Open ", sel_row[1], " (old)"))
+      output$open_old_file_link <- downloadHandler(
+        filename = function() {
+          paste0("old_", sel_row[1])
+        },
+        content = function(file) {
+          file.copy(paste0(sel_row[2]), file)
+        }
+      )
+    } else {
+      open_old_file_link("")
+    }
+
+    if (!is.na(sel_row[3])) {
+      open_new_file_link(paste0("Open ", sel_row[1], " (new)"))
+      output$open_new_file_link <- downloadHandler(
+        filename = function() {
+          paste0("new_", sel_row[1])
+        },
+        content = function(file) {
+          file.copy(paste0(sel_row[3]), file)
+        }
+      )
+    } else {
+      open_new_file_link("")
+    }
   })
 
   # set up the reactive value bindings to default outputs
@@ -122,6 +163,9 @@ server <- function(input, output, session) {
   output$full_out_placeholder <- shiny::renderText({
     full_out_placeholder_text()
   })
+
+  output$open_old_file_link_text <- shiny::renderText(open_old_file_link())
+  output$open_new_file_link_text <- shiny::renderText(open_new_file_link())
 }
 
 shiny::shinyApp(ui, server)
