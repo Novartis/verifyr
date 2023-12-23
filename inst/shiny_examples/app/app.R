@@ -16,7 +16,11 @@ custom_file_input <- function(input_id, label, value = "", ...) {
   )
 }
 
+dt_global_file_list <- NULL
+sel_row_index <- NULL
+
 ui <- shiny::fluidPage(
+  useShinyjs(),
   shiny::includeCSS("styles.css"),
   shiny::headerPanel("File Location Input"),
   shiny::wellPanel(
@@ -37,6 +41,7 @@ ui <- shiny::fluidPage(
       h2("Initial comparison (using function initial_comparison):"),
       DT::dataTableOutput("initial_out"),
       shiny::textOutput("initial_out_placeholder"),
+      shiny::downloadButton("download_csv", "Download comparison results as CSV"),
     ),
     shiny::column(12,
       h2("Side-by side comparison (using function full_comparison):"),
@@ -52,6 +57,14 @@ ui <- shiny::fluidPage(
       ),
       shiny::htmlOutput("full_out"),
       shiny::textOutput("full_out_placeholder"),
+      shiny::fluidRow(
+        shiny::column(12,
+          shiny::textAreaInput("full_out_comments", "Comments", width = "100%"),
+          shiny::actionButton("save_comments", "Save comments"),
+          shiny::actionButton("clear_comments", "Clear comments"),
+        ),
+        class = "comparison_comments",
+      ),
     ),
   ),
 )
@@ -90,23 +103,68 @@ server <- function(input, output, session) {
 
   list_of_files <- shiny::eventReactive(input$go, {
     if (file.exists(input$old_folder) && file.exists(input$new_folder)) {
+      shinyjs::runjs("$('.comparison_comments').hide();")
+      shinyjs::runjs("$('#download_csv').css('display', 'inline-block');")
       initial_out_placeholder_text("")
       verifyr::list_files(input$old_folder, input$new_folder, input$file_name_patter)
     }
   })
 
+  dt_proxy <- dataTableProxy("initial_out")
+
+  shiny::observeEvent(input$save_comments, {
+    if (is.null(dt_global_file_list)) {
+      dt_global_file_list <<- initial_verify()
+    }
+
+    dt_global_file_list[sel_row_index, "comments_full"] <- input$full_out_comments
+    dt_global_file_list[sel_row_index, "comments"] <- ifelse(input$full_out_comments != "", "yes", "no")
+    dt_global_file_list <<- dt_global_file_list
+
+    DT::replaceData(dt_proxy, dt_global_file_list)
+    DT::selectRows(dt_proxy, sel_row_index)
+  })
+
+  shiny::observeEvent(input$clear_comments, {
+    if (!is.null(dt_global_file_list)) {
+      if ("" != dt_global_file_list[sel_row_index, "comments_full"]) {
+        dt_global_file_list[sel_row_index, "comments_full"] <- ""
+        dt_global_file_list[sel_row_index, "comments"] <- "no"
+        dt_global_file_list <<- dt_global_file_list
+
+        DT::replaceData(dt_proxy, dt_global_file_list)
+        DT::selectRows(dt_proxy, sel_row_index)
+      }
+    }
+
+    shiny::updateTextAreaInput(session, "full_out_comments", value = "")
+  })
+
+  output$download_csv <- shiny::downloadHandler(
+    filename = function() {
+      paste0("verifyr_comparison_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv")
+    },
+    content = function(file) {
+      dt_subset <- dt_global_file_list[, !(names(dt_global_file_list) %in% "comments")]
+      write.csv(dt_subset, file, row.names = FALSE)
+    }
+  )
+
   initial_verify <- shiny::reactive({
     if (!is.null(list_of_files())) {
-      tibble::tibble(list_of_files()) %>%
+      dt_global_file_list <<- tibble::tibble(list_of_files()) %>%
         dplyr::mutate(omitted = input$omit_rows) %>%
         dplyr::rowwise() %>%
-        dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path, omit = omitted)) # nolint
+        dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path, omit = omitted)) %>% # nolint
+        dplyr::mutate(comments = "no") %>%
+        dplyr::mutate(comments_full = "")
     }
   })
 
   output$initial_out <-  DT::renderDataTable({
     if (!is.null(initial_verify())) {
-      DT::datatable(initial_verify(), selection = "single")
+      options <- list(columnDefs = list(list(visible = FALSE, targets = c("comments_full"))))
+      DT::datatable(initial_verify(), selection = "single", options = options)
     } else {
       "No folder selected or folders do not exist"
     }
@@ -114,7 +172,19 @@ server <- function(input, output, session) {
 
   shiny::observe({
     shiny::req(input$initial_out_rows_selected)
-    sel_row <- initial_verify()[input$initial_out_rows_selected, ]
+    new_row_index <- input$initial_out_rows_selected
+
+    # clear/initialize the comparison specific comment value when selecting a new row
+    if (!is.null(sel_row_index) && sel_row_index != new_row_index) {
+      row_comment <- paste0(dt_global_file_list[new_row_index, "comments_full"])
+      shiny::updateTextAreaInput(session, "full_out_comments", value = row_comment)
+    }
+
+    shinyjs::runjs("$('.comparison_comments').show();")
+
+    sel_row_index <<- new_row_index
+    sel_row <- initial_verify()[new_row_index, ]
+
     full_out_placeholder_text("")
 
     #list side-by-side comparison

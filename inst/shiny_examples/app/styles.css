@@ -14,7 +14,25 @@
     top: 25px;
 }
 
+#save_comments, #clear_comments {
+    margin-bottom: 20px;
+}
+
 #initial_out td:hover {
     cursor: pointer;
 }
 
+#initial_out td.selected_custom {
+    background-color: yellow;
+}
+
+.comparison_comments {
+    display: none;
+    margin-top: 20px;
+}
+
+#download_csv {
+    display: none;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
