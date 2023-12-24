@@ -70,6 +70,10 @@ ui <- shiny::fluidPage(
 )
 server <- function(input, output, session) {
 
+  # ===============================================================================================
+  # Element initializations
+  # ===============================================================================================
+
   roots  <- c(Home = fs::path_home(), Examples = fs::path_package("verifyr", "extdata"))
   params <- list(roots = roots, session = session, restrictions = system.file(package = "base"), allowDirCreate = FALSE)
 
@@ -85,21 +89,41 @@ server <- function(input, output, session) {
   default2 <- "Click on a row in the initial comparison result to view the detailed side-by-side comparison."
   full_out_placeholder_text <- shiny::reactiveVal(default2)
 
-  shiny::observe({
-    if (!is.integer(input$old_folder_select)) {
-      shiny::updateTextInput(session, "old_folder",
-        NULL,
-        shinyFiles::parseDirPath(roots, input$old_folder_select)
-      )
-    }
+  dt_proxy <- dataTableProxy("initial_out")
 
-    if (!is.integer(input$new_folder_select)) {
-      shiny::updateTextInput(session, "new_folder",
-        NULL,
-        shinyFiles::parseDirPath(roots, input$new_folder_select)
-      )
+  output$initial_out_placeholder <- shiny::renderText({
+    initial_out_placeholder_text()
+  })
+
+  output$full_out_placeholder <- shiny::renderText({
+    full_out_placeholder_text()
+  })
+
+  output$open_old_file_link_text <- shiny::renderText(open_old_file_link())
+  output$open_new_file_link_text <- shiny::renderText(open_new_file_link())
+
+  output$download_csv <- shiny::downloadHandler(
+    filename = function() {
+      paste0("verifyr_comparison_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv")
+    },
+    content = function(file) {
+      dt_subset <- dt_global_file_list[, !(names(dt_global_file_list) %in% "comments")]
+      write.csv(dt_subset, file, row.names = FALSE)
+    }
+  )
+
+  output$initial_out <- DT::renderDataTable({
+    if (!is.null(initial_verify())) {
+      options <- list(columnDefs = list(list(visible = FALSE, targets = c("comments_full"))))
+      DT::datatable(initial_verify(), selection = "single", options = options)
+    } else {
+      "No folder selected or folders do not exist"
     }
   })
+
+  # ===============================================================================================
+  # Reactive elements and observe triggers
+  # ===============================================================================================
 
   list_of_files <- shiny::eventReactive(input$go, {
     if (file.exists(input$old_folder) && file.exists(input$new_folder)) {
@@ -109,8 +133,6 @@ server <- function(input, output, session) {
       verifyr::list_files(input$old_folder, input$new_folder, input$file_name_patter)
     }
   })
-
-  dt_proxy <- dataTableProxy("initial_out")
 
   shiny::observeEvent(input$save_comments, {
     if (is.null(dt_global_file_list)) {
@@ -140,16 +162,6 @@ server <- function(input, output, session) {
     shiny::updateTextAreaInput(session, "full_out_comments", value = "")
   })
 
-  output$download_csv <- shiny::downloadHandler(
-    filename = function() {
-      paste0("verifyr_comparison_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv")
-    },
-    content = function(file) {
-      dt_subset <- dt_global_file_list[, !(names(dt_global_file_list) %in% "comments")]
-      write.csv(dt_subset, file, row.names = FALSE)
-    }
-  )
-
   initial_verify <- shiny::reactive({
     if (!is.null(list_of_files())) {
       dt_global_file_list <<- tibble::tibble(list_of_files()) %>%
@@ -161,16 +173,11 @@ server <- function(input, output, session) {
     }
   })
 
-  output$initial_out <-  DT::renderDataTable({
-    if (!is.null(initial_verify())) {
-      options <- list(columnDefs = list(list(visible = FALSE, targets = c("comments_full"))))
-      DT::datatable(initial_verify(), selection = "single", options = options)
-    } else {
-      "No folder selected or folders do not exist"
-    }
-  })
-
   shiny::observe({
+    # handle changes in folder selections
+    update_folder_selections()
+
+    # handle changes related to selecting a comparison row
     shiny::req(input$initial_out_rows_selected)
     new_row_index <- input$initial_out_rows_selected
 
@@ -185,9 +192,36 @@ server <- function(input, output, session) {
     sel_row_index <<- new_row_index
     sel_row <- initial_verify()[new_row_index, ]
 
+    # list side-by-side comparison
+    update_full_comparison(sel_row)
+
+    # set up the file download links for the compared files
+    update_download_links(sel_row)
+  })
+
+  # ===============================================================================================
+  # Helper functions
+  # ===============================================================================================
+
+  update_folder_selections <- function() {
+    if (!is.integer(input$old_folder_select)) {
+      shiny::updateTextInput(session, "old_folder",
+        NULL,
+        shinyFiles::parseDirPath(roots, input$old_folder_select)
+      )
+    }
+
+    if (!is.integer(input$new_folder_select)) {
+      shiny::updateTextInput(session, "new_folder",
+        NULL,
+        shinyFiles::parseDirPath(roots, input$new_folder_select)
+      )
+    }
+  }
+
+  update_full_comparison <- function(sel_row) {
     full_out_placeholder_text("")
 
-    #list side-by-side comparison
     output$full_out <- shiny::renderUI({
       shiny::HTML(
         as.character(
@@ -195,6 +229,11 @@ server <- function(input, output, session) {
         )
       )
     })
+  }
+
+  update_download_links <- function(sel_row) {
+    open_old_file_link("")
+    open_new_file_link("")
 
     if (!is.na(sel_row[2])) {
       open_old_file_link(paste0("Open ", sel_row[1], " (old)"))
@@ -206,8 +245,6 @@ server <- function(input, output, session) {
           file.copy(paste0(sel_row[2]), file)
         }
       )
-    } else {
-      open_old_file_link("")
     }
 
     if (!is.na(sel_row[3])) {
@@ -220,22 +257,8 @@ server <- function(input, output, session) {
           file.copy(paste0(sel_row[3]), file)
         }
       )
-    } else {
-      open_new_file_link("")
     }
-  })
-
-  # set up the reactive value bindings to default outputs
-  output$initial_out_placeholder <- shiny::renderText({
-    initial_out_placeholder_text()
-  })
-
-  output$full_out_placeholder <- shiny::renderText({
-    full_out_placeholder_text()
-  })
-
-  output$open_old_file_link_text <- shiny::renderText(open_old_file_link())
-  output$open_new_file_link_text <- shiny::renderText(open_new_file_link())
+  }
 }
 
 shiny::shinyApp(ui, server)
