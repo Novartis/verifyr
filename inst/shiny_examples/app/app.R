@@ -40,23 +40,21 @@ ui <- shiny::fluidPage(
     shiny::column(12,
       h2("Initial comparison (using function initial_comparison):"),
       DT::dataTableOutput("initial_out"),
-      shiny::textOutput("initial_out_placeholder"),
+      shiny::textOutput("initial_text_output"),
       shiny::downloadButton("download_csv", "Download comparison results as CSV"),
     ),
     shiny::column(12,
       h2("Side-by side comparison (using function full_comparison):"),
       shiny::fluidRow(
         shiny::column(6,
-          shiny::textOutput("full_out_placeholder1"),
-          shiny::downloadLink("open_old_file_link", shiny::textOutput("open_old_file_link_text")),
+          shiny::downloadLink("open_old_file_link", shiny::textOutput("open_old_file_link_output")),
         ),
         shiny::column(6,
-          shiny::textOutput("full_out_placeholder2"),
-          shiny::downloadLink("open_new_file_link", shiny::textOutput("open_new_file_link_text")),
+          shiny::downloadLink("open_new_file_link", shiny::textOutput("open_new_file_link_output")),
         ),
       ),
       shiny::htmlOutput("full_out"),
-      shiny::textOutput("full_out_placeholder"),
+      shiny::textOutput("full_text_output"),
       shiny::fluidRow(
         shiny::column(12,
           shiny::textAreaInput("full_out_comments", "Comments", width = "100%"),
@@ -80,27 +78,21 @@ server <- function(input, output, session) {
   do.call(shinyFiles::shinyDirChoose, c(list(input, "old_folder_select"), params))
   do.call(shinyFiles::shinyDirChoose, c(list(input, "new_folder_select"), params))
 
+  default1 <- "Select the compared file folders and execute the initial comparison by clicking on the 'Go' button."
+  default2 <- "Click on a row in the initial comparison result to view the detailed side-by-side comparison."
+
+  initial_text <- shiny::reactiveVal(default1)
+  full_text    <- shiny::reactiveVal(default2)
   open_old_file_link <- shiny::reactiveVal("")
   open_new_file_link <- shiny::reactiveVal("")
 
-  default1 <- "Select the compared file folders and execute the initial comparison by clicking on the 'Go' button."
-  initial_out_placeholder_text <- shiny::reactiveVal(default1)
-
-  default2 <- "Click on a row in the initial comparison result to view the detailed side-by-side comparison."
-  full_out_placeholder_text <- shiny::reactiveVal(default2)
-
   dt_proxy <- dataTableProxy("initial_out")
 
-  output$initial_out_placeholder <- shiny::renderText({
-    initial_out_placeholder_text()
-  })
+  output$initial_text_output <- shiny::renderText(initial_text())
+  output$full_text_output    <- shiny::renderText(full_text())
 
-  output$full_out_placeholder <- shiny::renderText({
-    full_out_placeholder_text()
-  })
-
-  output$open_old_file_link_text <- shiny::renderText(open_old_file_link())
-  output$open_new_file_link_text <- shiny::renderText(open_new_file_link())
+  output$open_old_file_link_output <- shiny::renderText(open_old_file_link())
+  output$open_new_file_link_output <- shiny::renderText(open_new_file_link())
 
   output$download_csv <- shiny::downloadHandler(
     filename = function() {
@@ -113,12 +105,9 @@ server <- function(input, output, session) {
   )
 
   output$initial_out <- DT::renderDataTable({
-    if (!is.null(initial_verify())) {
-      options <- list(columnDefs = list(list(visible = FALSE, targets = c("comments_full"))))
-      DT::datatable(initial_verify(), selection = "single", options = options)
-    } else {
-      "No folder selected or folders do not exist"
-    }
+    req(initial_verify())
+    options <- list(columnDefs = list(list(visible = FALSE, targets = c("comments_full"))))
+    DT::datatable(initial_verify(), selection = "single", options = options)
   })
 
   # ===============================================================================================
@@ -129,8 +118,11 @@ server <- function(input, output, session) {
     if (file.exists(input$old_folder) && file.exists(input$new_folder)) {
       shinyjs::runjs("$('.comparison_comments').hide();")
       shinyjs::runjs("$('#download_csv').css('display', 'inline-block');")
-      initial_out_placeholder_text("")
+      set_reactive_text("initial_text", "")
       verifyr::list_files(input$old_folder, input$new_folder, input$file_name_patter)
+    } else {
+      set_reactive_text("initial_text", "No folder selected or folders do not exist")
+      NULL
     }
   })
 
@@ -163,14 +155,13 @@ server <- function(input, output, session) {
   })
 
   initial_verify <- shiny::reactive({
-    if (!is.null(list_of_files())) {
-      dt_global_file_list <<- tibble::tibble(list_of_files()) %>%
-        dplyr::mutate(omitted = input$omit_rows) %>%
-        dplyr::rowwise() %>%
-        dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path, omit = omitted)) %>% # nolint
-        dplyr::mutate(comments = "no") %>%
-        dplyr::mutate(comments_full = "")
-    }
+    req(list_of_files())
+    dt_global_file_list <<- tibble::tibble(list_of_files()) %>%
+      dplyr::mutate(omitted = input$omit_rows) %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(comparison = verifyr::initial_comparison(old =old_path,new=new_path, omit = omitted)) %>% # nolint
+      dplyr::mutate(comments = "no") %>%
+      dplyr::mutate(comments_full = "")
   })
 
   shiny::observe({
@@ -203,6 +194,10 @@ server <- function(input, output, session) {
   # Helper functions
   # ===============================================================================================
 
+  set_reactive_text <- function(reactive_id, text, class = "") {
+    do.call(reactive_id, list(text))
+  }
+
   update_folder_selections <- function() {
     if (!is.integer(input$old_folder_select)) {
       shiny::updateTextInput(session, "old_folder",
@@ -220,7 +215,7 @@ server <- function(input, output, session) {
   }
 
   update_full_comparison <- function(sel_row) {
-    full_out_placeholder_text("")
+    set_reactive_text("full_text", "")
 
     output$full_out <- shiny::renderUI({
       shiny::HTML(
