@@ -13,6 +13,7 @@ Imports:
     fs,
     magrittr,
     shiny,
+    shinyjs,
     shinyFiles,
     stringr,
     striprtf,
